@@ -16,21 +16,22 @@ Opcional: muestra el objeto seleccionado anulando el fondo.
 import cv2 as cv
 import numpy as np
 from umucv.stream import autoStream, putText
-from umucv.util import ROI
+from umucv.util import ROI, Video
 from collections import deque
-
+from datetime import datetime as dt
 
 # ---------------------------------------------------------------------------
 # DATA
 # ---------------------------------------------------------------------------
 
-TIME_OF_RECORDING = 2 # Tiempo de guardado en segundos
+TIME_OF_RECORDING = 2  # Tiempo de guardado en segundos
 FPS = 30
 TOTAL_FRAMES_SAVE = TIME_OF_RECORDING * FPS
-SUAVIZAR_MEDIA = 5
-UMBRAL_INICIAL = 25
+SUAVIZAR_MEDIA = 10
+UMBRAL_INICIAL = 5
 
 cv.namedWindow('input')
+
 
 # ---------------------------------------------------------------------------
 # Class
@@ -42,6 +43,7 @@ class ControlAct:
     last_frames: deque
     last_mean: deque
     umbral: float
+    video = None
 
     def __init__(self, roi=None):
         if roi is None:
@@ -50,22 +52,24 @@ class ControlAct:
         self.saved_trozo = None
         self.last_frames = deque(maxlen=TOTAL_FRAMES_SAVE)
         self.last_mean = deque(maxlen=SUAVIZAR_MEDIA)
-        self.umbral = UMBRAL_INICIAL/1000
-        print(f'Umbral ajustado a {self.umbral}')
+        self.umbral = UMBRAL_INICIAL / 1000
 
     def reset_trozo(self):
         self.saved_trozo = None
         self.last_frames.clear()
         self.last_mean.clear()
 
+
 data = ControlAct(ROI('input'))
+
+
 # ---------------------------------------------------------------------------
 # Functions
 # ---------------------------------------------------------------------------
 
 def update_umbral(v):
     v = max(1, v)
-    data.umbral = v/1000
+    data.umbral = v / 1000
     print(f'Umbral ajustado a {data.umbral}')
 
 
@@ -73,11 +77,32 @@ def bgr2gray(x):
     return cv.cvtColor(x, cv.COLOR_BGR2GRAY).astype(float) / 255
 
 
+def start_video(data: ControlAct):
+    if data.video or len(data.last_frames) < 1:
+        return
+    data.video = Video(fps=FPS, codec="MJPG",ext="avi")
+    data.video.ON = True
+    for f in data.last_frames:
+        data.video.write(f)
+    data.last_frames.clear()
+
+
+def continue_video(data: ControlAct, f):
+    if data.video:
+        data.video.write(f)
+
+
+def stop_video(data: ControlAct):
+    data.video.ON = False
+    data.video.release()
+    data.video = None
+
+
 # ---------------------------------------------------------------------------
 # INIT
 # ---------------------------------------------------------------------------
 
-cv.createTrackbar('Umbral', 'input', 25, 1000 ,update_umbral)
+cv.createTrackbar('Umbral', 'input', UMBRAL_INICIAL, 1000, update_umbral)
 
 # ---------------------------------------------------------------------------
 # CODE
@@ -100,21 +125,28 @@ for key, frame in autoStream():
             mean = np.mean(diff)
             means = mean
             putText(diff, f'Mean = {np.round(mean, 4)}', orig=(5, 16))
-            putText(diff, f'Mean(t) = {np.round(means, 4)}', orig=(5, 16*2))
 
-            if len(data.last_mean) > 0:
+            if len(data.last_mean) >= SUAVIZAR_MEDIA:
                 means = np.mean(data.last_mean)
 
-            if np.abs(means-mean) <= data.umbral:
+            if np.abs(means - mean) <= data.umbral:
                 data.last_mean.append(mean)
+                data.last_frames.append(recorte)
+                if data.video:
+                    stop_video(data)
 
             else:
-                putText(diff, 'ALERT', orig=(5, y2-16))
+                putText(diff, 'ALERT', orig=(5, diff.shape[0] - 5))
                 print('Actividad detectada')
+                if data.video:
+                    continue_video(data, recorte)
+                else:
+                    start_video(data)
 
+            putText(diff, f'Mean(t) = {np.round(means, 4)}', orig=(5, 16 * 2))
             cv.imshow('Diferencia', diff)
 
-
+            data.last_frames.append(recorte)
 
         cv.rectangle(frame, (x1, y1), (x2, y2), color=(0, 255, 255), thickness=2)
         putText(frame, f'{x2 - x1 + 1}x{y2 - y1 + 1}', orig=(x1, y1 - 8))
