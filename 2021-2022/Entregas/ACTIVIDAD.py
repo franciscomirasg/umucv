@@ -28,7 +28,8 @@ TIME_OF_RECORDING = 2  # Tiempo de guardado en segundos
 FPS = 30
 TOTAL_FRAMES_SAVE = TIME_OF_RECORDING * FPS
 SUAVIZAR_MEDIA = 10
-UMBRAL_INICIAL = 5
+UMBRAL_INICIAL_DETEC = 5
+UMBRAL_INICIAL_RECORTE = 100
 
 cv.namedWindow('input')
 
@@ -42,7 +43,8 @@ class ControlAct:
     saved_trozo: np.ndarray
     last_frames: deque
     last_mean: deque
-    umbral: float
+    umbral_deteccion: float
+    umbral_recorte: float
     video = None
 
     def __init__(self, roi=None):
@@ -52,7 +54,7 @@ class ControlAct:
         self.saved_trozo = None
         self.last_frames = deque(maxlen=TOTAL_FRAMES_SAVE)
         self.last_mean = deque(maxlen=SUAVIZAR_MEDIA)
-        self.umbral = UMBRAL_INICIAL / 1000
+        self.umbral_deteccion = UMBRAL_INICIAL_DETEC / 1000
 
     def reset_trozo(self):
         self.saved_trozo = None
@@ -69,8 +71,13 @@ data = ControlAct(ROI('input'))
 
 def update_umbral(v):
     v = max(1, v)
-    data.umbral = v / 1000
-    print(f'Umbral ajustado a {data.umbral}')
+    data.umbral_deteccion = v / 1000
+    print(f'Umbral de deteccion ajustado a {data.umbral_deteccion}')
+
+def update_umbral_recorte(v):
+    v = max(1, v)
+    data.umbral_recorte = v / 1000
+    print(f'Umbral de recorte ajustado a {data.umbral_deteccion}')
 
 
 def bgr2gray(x):
@@ -102,7 +109,8 @@ def stop_video(data: ControlAct):
 # INIT
 # ---------------------------------------------------------------------------
 
-cv.createTrackbar('Umbral', 'input', UMBRAL_INICIAL, 1000, update_umbral)
+cv.createTrackbar('Umbral Deteccion', 'input', UMBRAL_INICIAL_DETEC, 1000, update_umbral)
+cv.createTrackbar('Umbral Recorte', 'input', UMBRAL_INICIAL_RECORTE, 1000, update_umbral_recorte)
 
 # ---------------------------------------------------------------------------
 # CODE
@@ -129,13 +137,19 @@ for key, frame in autoStream():
             if len(data.last_mean) >= SUAVIZAR_MEDIA:
                 means = np.mean(data.last_mean)
 
-            if np.abs(means - mean) <= data.umbral:
+            if np.abs(means - mean) <= data.umbral_deteccion:
                 data.last_mean.append(mean)
                 data.last_frames.append(recorte)
                 if data.video:
                     stop_video(data)
 
             else:
+                oni = diff > data.umbral_recorte
+                oni = oni.astype(float)
+                cv.imshow('mascara', oni)
+                # oni = cv.cvtColor(oni, cv.COLOR_GRAY2BGR).astype(float) / 255
+                # objeto = cv.bitwise_and(recorte, oni)
+                # cv.imshow('a', objeto)
                 putText(diff, 'ALERT', orig=(5, diff.shape[0] - 5))
                 print('Actividad detectada')
                 if data.video:
