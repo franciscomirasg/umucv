@@ -18,7 +18,6 @@ import numpy as np
 from umucv.stream import autoStream, putText
 from umucv.util import ROI, Video
 from collections import deque
-from datetime import datetime as dt
 
 # ---------------------------------------------------------------------------
 # DATA
@@ -39,7 +38,7 @@ cv.namedWindow('input')
 # ---------------------------------------------------------------------------
 
 class ControlAct:
-    _region: ROI
+    region: ROI
     saved_trozo: np.ndarray
     last_frames: deque
     last_mean: deque
@@ -92,7 +91,7 @@ def gray2bgr(x):
 def start_video(data: ControlAct):
     if data.video or len(data.last_frames) < 1:
         return
-    data.video = Video(fps=FPS)
+    data.video = Video(fps=FPS, codec="MJPG", ext="avi")
     data.video.ON = True
     for f in data.last_frames:
         data.video.write(f)
