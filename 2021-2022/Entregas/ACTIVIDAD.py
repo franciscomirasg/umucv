@@ -74,6 +74,7 @@ def update_umbral(v):
     data.umbral_deteccion = v / 1000
     print(f'Umbral de deteccion ajustado a {data.umbral_deteccion}')
 
+
 def update_umbral_recorte(v):
     v = max(1, v)
     data.umbral_recorte = v / 1000
@@ -84,10 +85,14 @@ def bgr2gray(x):
     return cv.cvtColor(x, cv.COLOR_BGR2GRAY).astype(float) / 255
 
 
+def gray2bgr(x):
+    return cv.cvtColor(x, cv.COLOR_GRAY2BGR).astype(float) / 255
+
+
 def start_video(data: ControlAct):
     if data.video or len(data.last_frames) < 1:
         return
-    data.video = Video(fps=FPS, codec="MJPG",ext="avi")
+    data.video = Video(fps=FPS)
     data.video.ON = True
     for f in data.last_frames:
         data.video.write(f)
@@ -105,6 +110,10 @@ def stop_video(data: ControlAct):
     data.video = None
 
 
+def make_mask(top, region, w, h):
+    mask = np.zeros((500, 500, 3), dtype="unit8")
+
+
 # ---------------------------------------------------------------------------
 # INIT
 # ---------------------------------------------------------------------------
@@ -120,6 +129,10 @@ for key, frame in autoStream():
     if data.region.roi:
         [x1, y1, x2, y2] = data.region.roi
         recorte = frame[y1:y2, x1:x2]
+
+        if key == ord('x'):
+            data.region.roi = None
+            data.reset_trozo()
 
         if key == ord('c'):
             if data.saved_trozo is not None:
@@ -147,7 +160,7 @@ for key, frame in autoStream():
                 oni = diff > data.umbral_recorte
                 oni = oni.astype(float)
                 cv.imshow('mascara', oni)
-                # oni = cv.cvtColor(oni, cv.COLOR_GRAY2BGR).astype(float) / 255
+                # oni =
                 # objeto = cv.bitwise_and(recorte, oni)
                 # cv.imshow('a', objeto)
                 putText(diff, 'ALERT', orig=(5, diff.shape[0] - 5))
