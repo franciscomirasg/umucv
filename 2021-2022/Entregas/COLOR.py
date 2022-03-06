@@ -23,12 +23,12 @@ from umucv.util import ROI
 # DATA
 # ---------------------------------------------------------------------------
 
-MODEL_W = 128
-MODEL_H = 128
+MODEL_W = 128  # Anchura del modelo a guardar
+MODEL_H = 128  # Altura del modelo a guardar
 MODEL_DIM = (MODEL_W, MODEL_H)
-MODELS_PER_ROW = 8
+MODELS_PER_ROW = 8  # Modelos que se muestran por fila
 
-FRAME_W = 640
+FRAME_W = 640  # Altura y anchua de la camara
 FRAME_H = 480
 
 
@@ -36,7 +36,7 @@ FRAME_H = 480
 # Class
 # ---------------------------------------------------------------------------
 
-class ColorParams:
+class ColorParams:  # Clase con los marametros
     region: ROI
     patrones: list
     actual_method: str
@@ -50,22 +50,22 @@ class ColorParams:
         self.patrones = list()
         self.methods_list = list()
 
-    def get_next_method(self):
+    def get_next_method(self):  # De haber más de una forma de comparar, seleciona la siguiente
         self._index = (self._index + 1) % len(self.methods_list)
         self.actual_method = self.methods_list[self._index]
         return self.actual_method
 
 
-class Pattern:
+class Pattern:  # Clase que representa la información que almacena un patrón
     frame: np.ndarray
-    color_info: tuple
+    color_info: tuple  # Datos del histograma de color
 
     def __init__(self, frame, color_info):
         self.frame = frame
         self.color_info = color_info
 
 
-class Method:
+class Method:  # Representa un metodo de comparación
     fun = None
     selector: str
 
@@ -85,7 +85,7 @@ def gray2bgr(x):
     return cv.cvtColor(x, cv.COLOR_GRAY2BGR).astype(float) / 255
 
 
-def make_histogram(c, size):
+def make_histogram(c, size):  # Crea un histograma normalizado y el adaptado al tamaño del ROI
     h, b = np.histogram(c, np.arange(0, 257, 4))
     x = 2 * b[1:]
     yn = h / np.sum(h)
@@ -95,7 +95,7 @@ def make_histogram(c, size):
     return xy, xyn
 
 
-def make_rgb_histogram(f, size):
+def make_rgb_histogram(f, size):  # Hace los histogramas para cada canal
     blue, green, red = cv.split(f)
     blue = make_histogram(blue, size)
     green = make_histogram(green, size)
@@ -103,18 +103,18 @@ def make_rgb_histogram(f, size):
     return blue, green, red
 
 
-def resize(f, dim):
+def resize(f, dim):  # Cambia el tamaño de una imagen
     return cv.resize(f, dim, interpolation=cv.INTER_LINEAR)
 
 
-def clear_info(patterns):
+def clear_info(patterns):  # Dada una lista de modelos, devuelve la información de los histogramas
     aux = list()
     for p in patterns:
         aux.append(p.frame)
     return aux
 
 
-def stack_patterns(data, n=MODELS_PER_ROW):
+def stack_patterns(data, n=MODELS_PER_ROW):  # Funcion auxiliar para mostrar los histogramas
     aux = clear_info(data.patrones)
     result = list()
     i = 0
@@ -138,27 +138,27 @@ def stack_patterns(data, n=MODELS_PER_ROW):
     return np.vstack(result)
 
 
-def hg_diff(hg1, hg2):
+def hg_diff(hg1, hg2):  # Comparacion de histogramas por diferencia absoluta
     hgy1 = hg1[:, 1]
     hgy2 = hg2[:, 1]
     diff = np.abs(hgy1 - hgy2)
     return diff
 
 
-def hg_intersect(hg1, hg2):
+def hg_intersect(hg1, hg2):  # Comparacion de histogramas por interseccion de histogramas
     mini = np.minimum(hg1, hg2)
     result = np.true_divide(np.sum(mini), np.sum(hg2))
     return result
 
 
-def select_candidate(values, mode):
+def select_candidate(values, mode):  # Seleciona que canal se diferencia más
     if mode == 'min':
         return np.max(values)
     elif mode == 'max':
         return np.min(values)
 
 
-def is_better(value, last_value, mode):
+def is_better(value, last_value, mode):  # Comprueba si el modelo actual es mejor
     if last_value is None:
         return True
     elif mode == 'min':
@@ -167,7 +167,7 @@ def is_better(value, last_value, mode):
         return value > last_value
 
 
-def select_most_like_model(data, hgn, method):
+def select_most_like_model(data, hgn, method):  # Selecciona el mejor modelo
     values = list()
     index = 0
     last_min = None
@@ -186,7 +186,7 @@ def select_most_like_model(data, hgn, method):
     return values, data.patrones[index]
 
 
-def show_values(vals, img, n=MODELS_PER_ROW):
+def show_values(vals, img, n=MODELS_PER_ROW):  # Muestra los valores del analisis
     i = 0
     l = 1
     aux_row = ''
@@ -226,22 +226,22 @@ for key, frame in autoStream():
         recorte = frame[y1:y2, x1:x2]
         b, g, r = make_rgb_histogram(recorte, y2 - y1)
 
-        if key == ord('c'):
+        if key == ord('c'):  # Guarda la region como modelo
             info = (b[1], g[1], r[1])
             data.patrones.append(Pattern(resize(recorte, MODEL_DIM), info))
 
-        if key == ord('x'):
+        if key == ord('x'):  # Limpia la region
             data.region.roi = None
             continue
 
-        if key == ord('r'):
+        if key == ord('r'):  # Borra todos los modelos
             data.patrones.clear()
             try:
                 cv.destroyWindow('modelos')
             except Exception:
                 pass
 
-        if key == ord('n'):
+        if key == ord('n'):  # Salta al siguiete metodo
             data.get_next_method()
 
         if len(data.patrones) > 0:
@@ -250,7 +250,8 @@ for key, frame in autoStream():
             show_values(vals, frame)
             cv.imshow('detectado', model.frame)
 
-        cv.polylines(recorte, [b[0]], isClosed=False, color=(255, 0, 0), thickness=2)
+        cv.polylines(recorte, [b[0]], isClosed=False, color=(255, 0, 0),
+                     thickness=2)  # Dibuja las lineas de visualización
         cv.polylines(recorte, [g[0]], isClosed=False, color=(0, 255, 0), thickness=2)
         cv.polylines(recorte, [r[0]], isClosed=False, color=(0, 0, 255), thickness=2)
 
