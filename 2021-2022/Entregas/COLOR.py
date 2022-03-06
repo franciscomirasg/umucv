@@ -107,26 +107,18 @@ def resize(f, dim):  # Cambia el tamaño de una imagen
     return cv.resize(f, dim, interpolation=cv.INTER_LINEAR)
 
 
-def clear_info(patterns):  # Dada una lista de modelos, devuelve la información de los histogramas
-    aux = list()
-    for p in patterns:
-        aux.append(p.frame)
-    return aux
-
-
 def stack_patterns(data, n=MODELS_PER_ROW):  # Funcion auxiliar para mostrar los histogramas
-    aux = clear_info(data.patrones)
     result = list()
     i = 0
     aux_row = None
-    for f in aux:
+    for f in data.patrones:
         if i <= 0:
             if aux_row:
                 result.append(np.hstack(aux_row))
             aux_row = list()
-            aux_row.append(f)
+            aux_row.append(f.frame)
         else:
-            aux_row.append(f)
+            aux_row.append(f.frame)
         i = (i + 1) % MODELS_PER_ROW
 
     if aux_row:

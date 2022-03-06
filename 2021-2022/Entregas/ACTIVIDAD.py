@@ -159,9 +159,9 @@ for key, frame in autoStream():
 
             if np.abs(means - mean) <= data.umbral_deteccion:  # Si la variación no es suficiente grande.
                 data.last_mean.append(mean)
-                data.last_frames.append(recorte)    # Actualizamos las medias y guardamos frame
-                if data.estado is not Estado.END:   # Si venimos de un estado de actividad
-                    data.stop_video()               # Detenemos grabación y destruimos ventanas residuales
+                data.last_frames.append(recorte)  # Actualizamos las medias y guardamos frame
+                if data.estado is not Estado.END:  # Si venimos de un estado de actividad
+                    data.stop_video()  # Detenemos grabación y destruimos ventanas residuales
                     print('Fin actividad')
                     data.estado = Estado.END
                     try:
@@ -169,21 +169,21 @@ for key, frame in autoStream():
                         cv.destroyWindow('objeto')
                     except Exception:
                         pass
-            else:   # Si Hay diferencia
-                mask = diff > data.umbral_recorte # Creamos mascara
+            else:  # Si Hay diferencia
+                mask = diff > data.umbral_recorte  # Creamos mascara
                 cv.imshow('mascara', mask.astype(float))
                 mask = gray2bgr(mask)
-                objeto = np.zeros_like(recorte) # Recortamos la mascara
+                objeto = np.zeros_like(recorte)  # Recortamos la mascara
                 np.copyto(objeto, recorte, where=mask == 1)
                 cv.imshow('objeto', objeto)
-                putText(diff, 'ALERT', orig=(5, diff.shape[0] - 5)) # Notificamos la alerta
+                putText(diff, 'ALERT', orig=(5, diff.shape[0] - 5))  # Notificamos la alerta
 
-                if data.estado is Estado.END: # Si no estamos grabando, empezamos
+                if data.estado is Estado.END:  # Si no estamos grabando, empezamos
                     print('Actividad detectada')
                     data.start_video()
                     data.continue_video(recorte)
                     data.estado = Estado.ACTIVITY
-                elif data.estado is Estado.ACTIVITY:    # Continuamos grabando
+                elif data.estado is Estado.ACTIVITY:  # Continuamos grabando
                     data.continue_video(recorte)
 
             putText(diff, f'Mean(t) = {np.round(means, 4)}', orig=(5, 16 * 2))
