@@ -13,6 +13,8 @@ Opcional: muestra el objeto seleccionado anulando el fondo.
 # ---------------------------------------------------------------------------
 # Imports
 # ---------------------------------------------------------------------------
+import enum
+
 import cv2 as cv
 import numpy as np
 from umucv.stream import autoStream, putText
@@ -27,7 +29,7 @@ TIME_OF_RECORDING = 2  # Tiempo de guardado en segundos
 FPS = 30
 TOTAL_FRAMES_SAVE = TIME_OF_RECORDING * FPS
 SUAVIZAR_MEDIA = 10
-UMBRAL_INICIAL_DETEC = 5
+UMBRAL_INICIAL_DETEC = 10
 UMBRAL_INICIAL_RECORTE = 100
 
 cv.namedWindow('input')
@@ -37,6 +39,11 @@ cv.namedWindow('input')
 # Class
 # ---------------------------------------------------------------------------
 
+class Estado(enum.Enum):
+    ACTIVITY = 1
+    END = 2
+
+
 class ControlAct:
     region: ROI
     saved_trozo: np.ndarray
@@ -45,6 +52,7 @@ class ControlAct:
     umbral_deteccion: float
     umbral_recorte: float
     video = None
+    estado: Estado
 
     def __init__(self, roi=None):
         if roi is None:
@@ -54,6 +62,7 @@ class ControlAct:
         self.last_frames = deque(maxlen=TOTAL_FRAMES_SAVE)
         self.last_mean = deque(maxlen=SUAVIZAR_MEDIA)
         self.umbral_deteccion = UMBRAL_INICIAL_DETEC / 1000
+        self.estado = Estado.END
 
     def reset_trozo(self):
         self.saved_trozo = None
@@ -85,7 +94,8 @@ def bgr2gray(x):
 
 
 def gray2bgr(x):
-    return cv.cvtColor(x, cv.COLOR_GRAY2BGR).astype(float) / 255
+    r = cv.cvtColor(np.float32(x), cv.COLOR_GRAY2BGR).astype(float)
+    return r
 
 
 def start_video(data: ControlAct):
@@ -107,10 +117,6 @@ def stop_video(data: ControlAct):
     data.video.ON = False
     data.video.release()
     data.video = None
-
-
-def make_mask(top, region, w, h):
-    mask = np.zeros((500, 500, 3), dtype="unit8")
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +150,6 @@ for key, frame in autoStream():
             diff = bgr2gray(diff)
             mean = np.mean(diff)
             means = mean
-            putText(diff, f'Mean = {np.round(mean, 4)}', orig=(5, 16))
 
             if len(data.last_mean) >= SUAVIZAR_MEDIA:
                 means = np.mean(data.last_mean)
@@ -152,24 +157,33 @@ for key, frame in autoStream():
             if np.abs(means - mean) <= data.umbral_deteccion:
                 data.last_mean.append(mean)
                 data.last_frames.append(recorte)
-                if data.video:
+                if data.estado is not Estado.END:
                     stop_video(data)
-
+                    print('Fin actividad')
+                    data.estado = Estado.END
+                    try:
+                        cv.destroyWindow('mascara')
+                        cv.destroyWindow('objeto')
+                    except Exception:
+                        pass
             else:
-                oni = diff > data.umbral_recorte
-                oni = oni.astype(float)
-                cv.imshow('mascara', oni)
-                # oni =
-                # objeto = cv.bitwise_and(recorte, oni)
-                # cv.imshow('a', objeto)
+                mask = diff > data.umbral_recorte
+                cv.imshow('mascara', mask.astype(float))
+                mask = gray2bgr(mask)
+                objeto = np.zeros_like(recorte)
+                np.copyto(objeto, recorte, where=mask == 1)
+                cv.imshow('objeto', objeto)
                 putText(diff, 'ALERT', orig=(5, diff.shape[0] - 5))
-                print('Actividad detectada')
-                if data.video:
-                    continue_video(data, recorte)
-                else:
+
+                if data.estado is Estado.END:
+                    print('Actividad detectada')
                     start_video(data)
+                    data.estado = Estado.ACTIVITY
+                elif data.estado is Estado.ACTIVITY:
+                    continue_video(data, recorte)
 
             putText(diff, f'Mean(t) = {np.round(means, 4)}', orig=(5, 16 * 2))
+            putText(diff, f'Mean = {np.round(mean, 4)}', orig=(5, 16))
             cv.imshow('Diferencia', diff)
 
             data.last_frames.append(recorte)
