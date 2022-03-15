@@ -183,3 +183,6 @@ fabric.properties
 
 # ZipFiles
 *.zip
+
+# ENV FILES
+*.env
