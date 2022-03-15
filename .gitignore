@@ -186,3 +186,4 @@ fabric.properties
 
 # ENV FILES
 *.env
+!code/bot/bot.env
