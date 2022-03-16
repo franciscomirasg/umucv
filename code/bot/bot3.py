@@ -5,13 +5,16 @@
 # enviada por el usuario
 import os
 
-from mybotid import myid, mybot
+from dotenv import load_dotenv
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from io import BytesIO
 from PIL import Image
 import cv2 as cv
 import skimage.io as io
 import numpy as np
+
+load_dotenv()
+
 
 ################################################################################
 
@@ -20,10 +23,9 @@ def process(img):
     r = np.fliplr(r)
     return r
 
+
 ################################################################################
 
-
-updater = Updater(mybot)
 
 updater = Updater(os.environ['TOKEN'])
 
@@ -58,7 +60,7 @@ def work(update, _):
     # print(path)
     img = io.imread(path)
     print(update.message.from_user.first_name, img.shape)
-    update.message.reply_text('{}x{}'.format(img.shape[1],img.shape[0]))
+    update.message.reply_text('{}x{}'.format(img.shape[1], img.shape[0]))
     r = process(img)
     sendImage(update.message.chat.id, r)
 
