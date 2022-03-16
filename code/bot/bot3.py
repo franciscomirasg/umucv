@@ -5,6 +5,7 @@
 # enviada por el usuario
 import os
 
+from mybotid import myid, mybot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from io import BytesIO
 from PIL import Image
@@ -12,9 +13,17 @@ import cv2 as cv
 import skimage.io as io
 import numpy as np
 
-from dotenv import load_dotenv
+################################################################################
 
-load_dotenv()
+def process(img):
+    r = cv.cvtColor(cv.cvtColor(img, cv.COLOR_RGB2GRAY), cv.COLOR_GRAY2RGB)
+    r = np.fliplr(r)
+    return r
+
+################################################################################
+
+
+updater = Updater(mybot)
 
 updater = Updater(os.environ['TOKEN'])
 
@@ -46,12 +55,11 @@ def argu(update, _):
 def work(update, _):
     file_id = update.message.photo[-1].file_id
     path = Bot.get_file(file_id)['file_path']
-    print(path)
+    # print(path)
     img = io.imread(path)
-    print(img.shape, update.message.from_user.first_name)
-    update.message.reply_text('{}x{}'.format(img.shape[1], img.shape[0]))
-    r = cv.cvtColor(cv.cvtColor(img, cv.COLOR_RGB2GRAY), cv.COLOR_GRAY2RGB)
-    r = np.fliplr(r)
+    print(update.message.from_user.first_name, img.shape)
+    update.message.reply_text('{}x{}'.format(img.shape[1],img.shape[0]))
+    r = process(img)
     sendImage(update.message.chat.id, r)
 
 
