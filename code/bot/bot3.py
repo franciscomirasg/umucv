@@ -23,9 +23,7 @@ def process(img):
     r = np.fliplr(r)
     return r
 
-
 ################################################################################
-
 
 updater = Updater(os.environ['TOKEN'])
 
