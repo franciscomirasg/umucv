@@ -34,19 +34,23 @@ for key, frame in autoStream():
     
     # gradiente    
     gx,gy = grad( gaussian(2, gray) )
+
     
-    # los elementos de la matriz de covarianza
+    # los elementos de la matriz de covarianza Filter box hace media, gausiano mas gradual
     gx2 = gx * gx
     gy2 = gy * gy
     xyg = gx * gy
     
-    # sus medias en un entorno
+    # sus medias en un entorno sigmas, matrices covar
     sx2 = gaussian(5,gx2)
     sy2 = gaussian(5,gy2)
     sxy = gaussian(5,xyg)
+
+    cv.imshow('debug sX', sx2/sx2.max())
+    cv.imshow('debug sy', sy2/sy2.max())
     
     # valor propio más pequeño en cada pixel, que indica la intensidad de esquina
-    lmin = sx2 + sy2 - np.sqrt(sx2**2 + sy2**2 + 4*sxy**2 - 2*sx2*sy2)
+    lmin = sx2 + sy2 - np.sqrt(sx2**2 + sy2**2 + 4*sxy**2 - 2*sx2*sy2) # Calculo de lamda min
     
     cv.imshow('lambda min',  lmin/lmin.max() )
     

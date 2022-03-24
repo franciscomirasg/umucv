@@ -1,0 +1,1 @@
+curl.exe --output "shape_predictor_68_face_landmarks.dat" --url "https://robot.inf.um.es/material/va/shape_predictor_68_face_landmarks.dat"

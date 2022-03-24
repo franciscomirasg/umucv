@@ -9,10 +9,10 @@ from umucv.stream import autoStream
 from umucv.util import Video
 
 # Los argumentos por omisión son video h264 y fps automático
-# video = Video()
+video = Video()
 
 # Si no está disponible el codec usamos formato mjpg
-video = Video(fps=15, codec="MJPG",ext="avi")
+# video = Video(fps=15, codec="MJPG",ext="avi")
 
 # Si queremos que empiece a grabar desde el primer frame
 # video.ON = True

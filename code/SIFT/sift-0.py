@@ -19,7 +19,7 @@ for key, frame in autoStream():
 
     t0 = time.time()
     # invocamos al detector (por ahora no usamos los descriptores)
-    keypoints , _ = sift.detectAndCompute(frame, mask=None)
+    keypoints , _ = sift.detectAndCompute(frame, mask=None) # Detectar y los calcula. Devuelve tupla de puntos y descriptores
     t1 = time.time()
 
     putText(frame, '{} keypoints  {:.0f} ms'.format(len(keypoints), 1000*(t1-t0)))
@@ -28,7 +28,7 @@ for key, frame in autoStream():
     # que indica su orientación.
     # al mover la cámara el tamaño y orientación debe mantenerse coherente con la imagen
     flag = cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
-    cv.drawKeypoints(frame, keypoints, frame, color=(100,150,255), flags=flag)
+    cv.drawKeypoints(frame, keypoints, frame, color=(100,150,255), flags=flag) # Pinta los puntos
     
     cv.imshow('SIFT', frame)
 
