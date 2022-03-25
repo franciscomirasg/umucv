@@ -21,8 +21,7 @@ def componentes(c):
     f  = fft(z)                     # calculamos la transformada de Fourier discreta
     return f
 
-
-# calcula el contorno de la elipse de frecuencia k
+# calcula el contorno de la elipse de frecuencia k Deteccion por variante de frecuencia, cuanta mas vueltas mas compomemtes
 def elipse(f,k):                    # dada una transformada de fourier y una frecuencia deseada
     s = np.zeros_like(f)            # preparamos espacio para una una trasformada
     s[[k,-k,0]] = f[[k,-k,0]]       # copiamos la frecuencia cero (para centrar la elipse en su sitio)

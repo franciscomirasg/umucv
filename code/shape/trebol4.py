@@ -15,12 +15,12 @@ from numpy.fft import fft
 
 
 # esta función recibe un contorno y produce descriptor de tamaño wmax*2+1
-def invar(c, wmax=10):
+def invar(c, wmax=10): ## 10 guay para siluetas facilmente recon
     x,y = c.T                       # separamos las coordenadas x e y
     z = x+y*1j                      # convertimos los puntos en números complejos
     f  = fft(z)                     # calculamos la transformada de Fourier discreta
     fa = abs(f)                     # tomamos el módulo para conseguir invarianza a rotación
-                                    # y punto de partida
+                                    # y punto de partida ## Permite que si la imagen gira mantenga las componentes de freq
     s = fa[1] + fa[-1]              # La amplitud de la frecuencia 1 nos da el tamaño global de la figura
                                     # y servirá para normalizar la escala
     v = np.zeros(2*wmax+1)          # preparamos espacio para el resultado

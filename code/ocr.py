@@ -20,7 +20,7 @@ print(tesserocr.tesseract_version())  # print tesseract-ocr version
 print(tesserocr.get_languages())      # prints tessdata path and list of available languages
 
 # establecemos la configuración de trabajo
-tesseract = tesserocr.PyTessBaseAPI(lang='eng', psm=tesserocr.PSM.SINGLE_LINE, oem=tesserocr.OEM.DEFAULT)
+tesseract = tesserocr.PyTessBaseAPI(lang='eng', psm=tesserocr.PSM_, oem=tesserocr.OEM.DEFAULT)
 # lo importante aquí es la opción de SINGLE_LINE (y que en el ROI haya una sola línea realmente)
 
 # FIXME: no he conseguido que estas opciones funcionen
