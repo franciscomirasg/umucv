@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# 3) Construimos el clasificador gaussiano con reducción PCA
+# 3) Construimos el clasificador gaussiano con reducción PCA - Ejemplo funcional
 
 import cv2 as cv
 import numpy as np
